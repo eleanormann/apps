@@ -2,6 +2,7 @@ package test;
 
 import static org.junit.Assert.*;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +67,37 @@ public class DatabaseTest {
 		List<String> values = new ArrayList<String>(); 
 		values.addAll(lookupMap.values());
 		test.insertRecord(values, "users");
-		assertNotNull("27".equals(test.simpleLookup(lookupMap, "users")));
+		assertTrue("27".equals(test.simpleLookup(lookupMap, "users")));
 		
 	}
+	
+	@Test
+	public void testSimpleCrud() throws Exception{
+		MysqlAccess test = new MysqlAccess();
+		test.simpleCUD("insert into healthapp.session values ('33', 'testUser', '2014-03-30', 'test', 'user')");
+	}
+	
+	@Test
+	public void testSimpleRead() throws Exception{
+		MysqlAccess test = new MysqlAccess();
+		test.simpleRead("select * from healthapp.session");
+		assertTrue("insert did not occur as expected: returned " +  test.getResultSet().getFetchSize(), test.getResultSet().getFetchSize()==1);
+		test.close();
+	}
+	
+	@Test
+	public void testGetResultSet(){
+		Map<String, String> lookupMap = new HashMap<String, String>();
+		lookupMap.put("id", "14");
+		lookupMap.put("username", "'testUsername'");
+		lookupMap.put("password", "'testPassword'");
+		lookupMap.put("updated_date", "?");
+		lookupMap.put("active", "'Y'");
+		MysqlAccess test = new MysqlAccess();
+		List<String> values = new ArrayList<String>(); 
+		values.addAll(lookupMap.values());
+		test.simpleLookup(lookupMap, "users");
+		assertNotNull(test.getResultSet());
+	}
 }
+
