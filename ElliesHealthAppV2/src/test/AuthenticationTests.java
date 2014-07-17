@@ -1,9 +1,6 @@
 package test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,11 +8,11 @@ import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import database.MysqlAccess;
 import security.Authenticate;
 import security.SimpleAuthenticate;
+import database.MysqlAccess;
 
-public class LoginTest {
+public class AuthenticationTests {
 	static Authenticate auth;
 	
 	@BeforeClass
@@ -41,16 +38,7 @@ public class LoginTest {
 		fail("not yet implemented");
 	}
 	
-	@Test
-	public void testInsertLoginDetails(){
-		MysqlAccess dbtest = new MysqlAccess();
-		List<String> values = new ArrayList<String>();
-		values.add("testUsername");
-		values.add("testPassword");
-		values.add("?");
-		values.add("Y");
-		assertTrue("insert failed", dbtest.insertRecord(values, "users"));
-	}
+	
 	
 	@Test
 	public void testCreateSelectStatement(){
@@ -107,5 +95,4 @@ public class LoginTest {
 		
 	}
 	
-
 }
