@@ -75,12 +75,13 @@ public class DatabaseTest {
 	public void testSimpleCrud() throws Exception{
 		MysqlAccess test = new MysqlAccess();
 		test.simpleCUD("insert into healthapp.session values ('33', 'testUser', '2014-03-30', 'test', 'user')");
+		assertFalse("no results returned", test.simpleRead("select * from healthapp.session where id=33").isEmpty());
 	}
 	
 	@Test
 	public void testSimpleRead() throws Exception{
 		MysqlAccess test = new MysqlAccess();
-		test.simpleRead("select * from healthapp.session");
+		assertFalse("no results returned", test.simpleRead("select * from healthapp.session").isEmpty());
 	}
 	
 	@Test

@@ -2,6 +2,7 @@ package database;
 
 
 import java.sql.Connection;
+import java.sql.ResultSetMetaData;
 import java.sql.Timestamp;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -46,7 +47,7 @@ public class MysqlAccess {
 	    	e.printStackTrace();
 	    }
 	}
-	
+	//TODO handle duplicate record
 	public void simpleCUD(String query){
 		try{
 			connectToDatabase(query);
@@ -61,22 +62,50 @@ public class MysqlAccess {
 		}
 	}
 	
-	public void simpleRead(String query) throws Exception{
-		try{
-			 Class.forName("com.mysql.jdbc.Driver");
-		      // setup the connection with the DB.
-		      connect = DriverManager.getConnection("jdbc:mysql://localhost/healthapp?" + "user=guest&password=guest");
-		      // statements allow to issue SQL queries to the database
-		     statement = connect.createStatement();
-			resultSet = statement.executeQuery(query);
+	public String simpleRead(String query) throws Exception {
+		String results = "";
+		try {
+			// this will load the MySQL driver, each DB has its own driver
+			Class.forName("com.mysql.jdbc.Driver");
+			// setup the connection with the DB.
+			connect = DriverManager.getConnection("jdbc:mysql://localhost/healthapp?" + "user=guest&password=guest");
 
-			System.out.println(resultSet.getFetchSize());
-		}catch (SQLException e) {
-			e.printStackTrace();
-		} finally{
-			close();
-		}
+			// statements allow to issue SQL queries to the database
+			statement = connect.createStatement();
+	      
+			// resultSet gets the result of the SQL query
+			resultSet = statement.executeQuery(query);
+	        results = writeResultSet(resultSet, query);
+	    } catch (Exception e) {
+	    	e.printStackTrace();
+	    } finally {
+	      close();
+	    }
+		return results;
 	}
+
+	private String writeResultSet(ResultSet resultSet, String query) throws SecurityException, NoSuchMethodException, Exception {
+		  String results = "";
+		  ResultSetMetaData tableInfo =  resultSet.getMetaData();
+		  // resultSet is initialised before the first data set
+		  while (resultSet.next()) {
+		      // column number start at 1
+			  for (int i = 1; i<= resultSet.getMetaData().getColumnCount(); i++){
+				  results += tableInfo.getColumnName(i)  + "=";
+				  int colType = tableInfo.getColumnType(i);
+				  if(colType==4){ 
+					  results += resultSet.getInt(i) + " "; 
+				  } else if(colType==12) { 
+					  results += resultSet.getString(i) + " "; 
+				  } else if(colType==93) { 
+					  results += resultSet.getDate(i) + " ";
+				  }
+			  }
+			  results += "\n";
+		  }
+		  
+		  return results;
+	  }
 
 
 	private void writeMetaData() throws SQLException {
