@@ -81,8 +81,6 @@ public class DatabaseTest {
 	public void testSimpleRead() throws Exception{
 		MysqlAccess test = new MysqlAccess();
 		test.simpleRead("select * from healthapp.session");
-		assertTrue("insert did not occur as expected: returned " +  test.getResultSet().getFetchSize(), test.getResultSet().getFetchSize()==1);
-		test.close();
 	}
 	
 	@Test

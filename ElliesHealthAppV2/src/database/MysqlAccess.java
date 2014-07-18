@@ -69,10 +69,13 @@ public class MysqlAccess {
 		      // statements allow to issue SQL queries to the database
 		     statement = connect.createStatement();
 			resultSet = statement.executeQuery(query);
+
 			System.out.println(resultSet.getFetchSize());
 		}catch (SQLException e) {
 			e.printStackTrace();
-		} 
+		} finally{
+			close();
+		}
 	}
 
 
