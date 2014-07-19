@@ -11,11 +11,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+
 
 //TODO handle returns better - see what the internet says
 public class MysqlAccess {
@@ -23,16 +21,17 @@ public class MysqlAccess {
 	private Statement statement = null; //does prepared statement inherit statement? can I use both?
 	private PreparedStatement preparedStatement = null;
 	private ResultSet resultSet = null;
+
 	
-	public ResultSet getResultSet(){
-		if(resultSet==null){
-			System.out.println("no results");
-		}
-		return resultSet;
-	}
-	
-	
-	public void connectToDatabase(String query) throws SQLException{
+	/**Connects to the healthapp mysql database using the java.sql methods.
+	 * This simple connect does not make use of the PreparedStatement class that provides greater
+	 * flexibility in creating the query. 
+	 * NB: Connection and Statement MUST BE CLOSED via another method
+	 * TODO: generify
+	 * TODO: enable preparedStatement
+	 * TODO: explore java.sql methods for other useful stuff
+	 */
+	public void connectToDatabase(){
 	    try{ 
 		// this will load the MySQL driver, each DB has its own driver
 	      Class.forName("com.mysql.jdbc.Driver");
@@ -47,12 +46,17 @@ public class MysqlAccess {
 	    	e.printStackTrace();
 	    }
 	}
-	//TODO handle duplicate record
+	
+	/**A simple create/update/delete method that executes a valid sql query
+	 * Currently does not handle failed inserts due to existing record.
+	 * TODO: decide whether to automatically update existing records when insert fails 
+	 * 	or whether to create a separate simpleUpsert method
+	 * @param query
+	 */
 	public void simpleCUD(String query){
 		try{
-			connectToDatabase(query);
-			int out = statement.executeUpdate(query);
-			System.out.println(out);
+			connectToDatabase();
+			statement.executeUpdate(query);
 		}catch(NullPointerException e){
 			e.printStackTrace();
 		}catch(SQLException e){
@@ -62,28 +66,30 @@ public class MysqlAccess {
 		}
 	}
 	
-	public String simpleRead(String query) throws Exception {
+	/**A simple read method that executes a valid sql query and parses the results into a single string
+	 *  formated key=value for each row, with new line between rows
+	 * TODO: decide whether to refactor to produce a csv file
+	 * @param query
+	 * @return
+	 */
+	public String simpleRead(String query){
 		String results = "";
-		try {
-			// this will load the MySQL driver, each DB has its own driver
-			Class.forName("com.mysql.jdbc.Driver");
-			// setup the connection with the DB.
-			connect = DriverManager.getConnection("jdbc:mysql://localhost/healthapp?" + "user=guest&password=guest");
-
-			// statements allow to issue SQL queries to the database
-			statement = connect.createStatement();
-	      
-			// resultSet gets the result of the SQL query
+		try{
+			connectToDatabase();
 			resultSet = statement.executeQuery(query);
-	        results = writeResultSet(resultSet, query);
-	    } catch (Exception e) {
-	    	e.printStackTrace();
-	    } finally {
-	      close();
-	    }
+			results = writeResultSet(resultSet, query);
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			close();
+		}
 		return results;
 	}
 
+	/** This method creates a string of the ResultSet, using table metadata to identify the data type to get. 
+	 * This impl is far from ideal, as the if list potentially could get rather long.  
+	 * It was most convenient to parse the resultSet into a string because the open connection was tricky to handle.
+	 */
 	private String writeResultSet(ResultSet resultSet, String query) throws SecurityException, NoSuchMethodException, Exception {
 		  String results = "";
 		  ResultSetMetaData tableInfo =  resultSet.getMetaData();
@@ -95,9 +101,9 @@ public class MysqlAccess {
 				  int colType = tableInfo.getColumnType(i);
 				  if(colType==4){ 
 					  results += resultSet.getInt(i) + " "; 
-				  } else if(colType==12) { 
+				  } else if(colType==1 || colType==12) { 
 					  results += resultSet.getString(i) + " "; 
-				  } else if(colType==93) { 
+				  } else if(colType==91) { 
 					  results += resultSet.getDate(i) + " ";
 				  }
 			  }
@@ -105,35 +111,6 @@ public class MysqlAccess {
 		  }
 		  
 		  return results;
-	  }
-
-
-	private void writeMetaData() throws SQLException {
-	    // now get some metadata from the database
-		  ResultSet  resultSet = statement.executeQuery("select * from healthapp.session");
-		  System.out.println("The columns in the table are: ");
-		  System.out.println("Table: " + resultSet.getMetaData().getTableName(1));
-		  for  (int i = 1; i<= resultSet.getMetaData().getColumnCount(); i++){
-			  System.out.println("Column " +i  + " "+ resultSet.getMetaData().getColumnName(i));
-		  }
-	  }
-	  
-	  private void writeResultSet(ResultSet resultSet) throws SQLException {
-	    // resultSet is initialised before the first data set
-		  while (resultSet.next()) {
-	      // it is possible to get the columns via name
-	      // also possible to get the columns via the column number
-	      // which starts at 1
-	      // e.g., resultSet.getSTring(2);
-	      String user = resultSet.getString("user");
-	      String page = resultSet.getString("page");
-	      String source = resultSet.getString("source");
-	      Date date = resultSet.getDate("timestamp");
-	      System.out.println("User: " + user);
-	      System.out.println("page: " + page);
-	      System.out.println("source: " + source);
-	      System.out.println("Date: " + date);
-	    }
 	  }
 
 	  // you need to close all three to make sure
@@ -175,39 +152,27 @@ public class MysqlAccess {
 	  
 	  }
 
-
-
-	public boolean insertRecord(List<String> data, String table) {
-		String insertStatement = createInsertStatement(data, table);
-		try{
-			Class.forName("com.mysql.jdbc.Driver");
-		    // setup the connection with the DB.
-		    connect = DriverManager.getConnection("jdbc:mysql://localhost/healthapp?" + "user=guest&password=guest");
-		    // preparedStatements can use variables and are more efficient
-		    preparedStatement = connect.prepareStatement(insertStatement);
-		    Date currentTime = new Date();
-		  	preparedStatement.setTimestamp(1, new Timestamp(currentTime.getTime()));
-		    preparedStatement.executeUpdate();
-		    return true;
-		
-		}catch(ClassNotFoundException e){
-			System.out.println("couldnt find db class");
-			e.printStackTrace();
-			
-		} catch (SQLException e) {
-			System.out.println("sql failed");
-			e.printStackTrace();
+	  /**Three methods to create valid queries and to call the execute methods
+	   * @return true if successful and false if not
+	   */
+	  public boolean updateRecord(Map<String, String> updateMap, String table){
+			//TODO create statement then get record id then update
+			return false;
 		}
-		return false;
-	}
+		
+		public boolean insertRecord(Map<String, String> insertMap, String table){
+			return false;
+		}
+		
+		public boolean deleteRecord(Map<String, String> deleteMap, String table){
+			return false;
+		}
+		
+		public String readRecord(Map<String,String> readMap, String table){
+			return null;
+		}
 
-
-	
-	public boolean updateRecord(){
-		//TODO get record id and then do the above
-		return false;
-	}
-
+	//TODO ensure that the values are in the correct order
 	public String createInsertStatement(List<String> data, String table) {
 		String insertStatement = "insert into healthapp." + table + " values (default, ";
 		for(String value : data){
@@ -221,56 +186,14 @@ public class MysqlAccess {
 		return insertStatement;
 	}
 
-
-
-	public ResultSet readRecord(String[] columns, String table) {
-		String query = createSelectStatement(columns);
-		
-		try {
-		// this will load the MySQL driver, each DB has its own driver
-			Class.forName("com.mysql.jdbc.Driver");
-		    connect = DriverManager.getConnection("jdbc:mysql://localhost/healthapp?" + "user=guest&password=guest");
-		    statement = connect.createStatement();
-		    ResultSet results =  statement.executeQuery(query + " from " + table);
-		    return results;
-		    
-	    } catch (Exception e) {
-		   System.out.println("database error");
-		   close();
-		} 
-		return null;
-	}
-
-	public String createWhereStatement(Map<String,String> lookupMap){
-		String whereStatement = " where ";
-		for (String key : lookupMap.keySet()){
-			if(!"default".equals(lookupMap.get(key)) && !"?".equals(lookupMap.get(key))){
-				whereStatement += key + "=" + lookupMap.get(key) + " and ";
-			}
+	private String createUpdateStatement(Map<String, String> upsertMap,	String table) {
+		String updateStatement =  "update " + table + " set ";
+		for(String key : upsertMap.keySet()){
+			updateStatement += key + "=" + upsertMap.get(key) + ", ";
 		}
-		return whereStatement.substring(0, whereStatement.length()-5);
-	}
+		return updateStatement.substring(0, updateStatement.lastIndexOf(',')) + " where id=" + upsertMap.get("id");
+	} 
 	
-	public ResultSet simpleLookup(Map<String, String> lookupMap, String table){
-		String query = "select id from " + table + createWhereStatement(lookupMap);
-		try {
-			// this will load the MySQL driver, each DB has its own driver
-				Class.forName("com.mysql.jdbc.Driver");
-			    connect = DriverManager.getConnection("jdbc:mysql://localhost/healthapp?" + "user=guest&password=guest");
-			    statement = connect.createStatement();
-			    ResultSet results =  statement.executeQuery(query);
-			    return results;
-			    
-		    } catch (Exception e) {
-			   e.printStackTrace();
-		    	System.out.println("database error");
-			   close();
-			} 
-		return null;
-	}
-
-
-
 	public String createSelectStatement(String[] variables) {
 		String query = "select ";
 		for (String variable : variables){
@@ -280,26 +203,37 @@ public class MysqlAccess {
 		System.out.println(query);
 		return query;
 	}
+	public String createWhereStatement(Map<String,String> lookupMap){
+		String whereStatement = " where ";
+		for (String key : lookupMap.keySet()){
+			if(!"default".equals(lookupMap.get(key)) && !"?".equals(lookupMap.get(key))){
+				whereStatement += key + "='" + lookupMap.get(key) + "' and ";
+			}
+		}
+		return whereStatement.substring(0, whereStatement.length()-5);
+	}
+
+	
 
 
-
+//insert will fail if the order of columns is not correct TODO fix that in createInsertStatement
 	public String upsert(Map<String, String> upsertMap, String table) {
 		String upsert = null;
 		String upsertStatement = null;
 		try {
-			ResultSet lookupId = simpleLookup(upsertMap, table);
-			if(resultSet.last()){
+			String lookupId = simpleRead("select id from " + table + createWhereStatement(upsertMap));
+			if(!lookupId.isEmpty()){
 				 upsertStatement = createUpdateStatement(upsertMap, table);
 				 //TODO replace with log entry
 				 upsert = "update";
 			} else{
 				List<String> columns = new ArrayList<String>();
-				columns.addAll(upsertMap.keySet());
+				columns.addAll(upsertMap.values());
 				upsertStatement = createInsertStatement(columns, table);
 				//TODO replace with log entry
 				upsert = "insert";
 			}
-			
+			connectToDatabase();
 		    preparedStatement = connect.prepareStatement(upsertStatement);
 		    Date currentTime = new Date();
 		  	preparedStatement.setTimestamp(1, new Timestamp(currentTime.getTime()));
@@ -309,17 +243,13 @@ public class MysqlAccess {
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		} finally{
+			close();
+		}
 		return upsert;
 	}
 
 
 
-	private String createUpdateStatement(Map<String, String> upsertMap,	String table) {
-		String updateStatement =  "update " + table + " set ";
-		for(String key : upsertMap.keySet()){
-			updateStatement += key + "=" + upsertMap.get(key) + ", ";
-		}
-		return updateStatement.substring(0, updateStatement.lastIndexOf(',')) + " where id=" + upsertMap.get("id");
-	} 
+	
 }

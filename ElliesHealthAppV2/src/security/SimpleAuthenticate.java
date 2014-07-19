@@ -37,21 +37,13 @@ public class SimpleAuthenticate {
 			logOut();
 		}
 		MysqlAccess readUsers = new MysqlAccess();
-		String[] input = {"username","password"};
-		ResultSet results =  readUsers.readRecord(input, "users");
+		Map<String, String> readMap = new HashMap<String, String>();
+		readMap.put("username", username);
+		readMap.put("password", password);
+		String results =  readUsers.readRecord(readMap, "users");
 		//TODO check results contains username/password combo
-		try {
-			while(results.next()){
-				if(results.getString("username").equals(username) && results.getString("password").equals(password)){
-					token = true;
-					break;
-				}
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}finally{
-			readUsers.close();
+		if(results.contains("username=" + username + " password=" + password)){
+			token=true;
 		}
 		
 	}

@@ -3,7 +3,9 @@ package test;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,7 +40,16 @@ public class AuthenticationTests {
 		fail("not yet implemented");
 	}
 	
-	
+	@Test
+	public void testInsertLoginDetails(){
+		MysqlAccess dbtest = new MysqlAccess();
+		Map<String, String> inputMap = new HashMap<String, String>();
+		inputMap.put("username", "testUsername");
+		inputMap.put("password", "testPassword");
+		inputMap.put("updated_date","?");
+		inputMap.put("active", "Y");
+		assertTrue("insert failed", dbtest.insertRecord(inputMap, "users"));
+	}
 	
 	@Test
 	public void testCreateSelectStatement(){

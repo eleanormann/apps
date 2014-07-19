@@ -14,24 +14,15 @@ import database.MysqlAccess;
 
 public class DatabaseTest {
 	
-	@Test
-	public void testInsertLoginDetails(){
-		MysqlAccess dbtest = new MysqlAccess();
-		List<String> values = new ArrayList<String>();
-		values.add("testUsername");
-		values.add("testPassword");
-		values.add("?");
-		values.add("Y");
-		assertTrue("insert failed", dbtest.insertRecord(values, "users"));
-	}
+	
 	
 	@Test
 	public void testInsertOrUpdate(){
 		Map<String, String> upsertMap = new HashMap<String, String>();
-		upsertMap.put("username", "'newUser'");
-		upsertMap.put("password", "'newPassword'");
+		upsertMap.put("username", "newUser");
+		upsertMap.put("password", "newPassword");
 		upsertMap.put("updated_date", "?");
-		upsertMap.put("active", "'Y'");
+		upsertMap.put("active", "Y");
 		MysqlAccess test = new MysqlAccess();
 		String actual = test.upsert(upsertMap, "users");
 		String actual2 = test.upsert(upsertMap, "users");
@@ -55,21 +46,7 @@ public class DatabaseTest {
 				&& whereStatement.startsWith(" where ") && whereStatement.endsWith("'"));
 	}
 	
-	@Test
-	public void testSimpleLookup(){
-		Map<String, String> lookupMap = new HashMap<String, String>();
-		lookupMap.put("id", "27");
-		lookupMap.put("username", "'newUsername'");
-		lookupMap.put("password", "'newPassword'");
-		lookupMap.put("updated_date", "?");
-		lookupMap.put("active", "'Y'");
-		MysqlAccess test = new MysqlAccess();
-		List<String> values = new ArrayList<String>(); 
-		values.addAll(lookupMap.values());
-		test.insertRecord(values, "users");
-		assertTrue("27".equals(test.simpleLookup(lookupMap, "users")));
 		
-	}
 	
 	@Test
 	public void testSimpleCrud() throws Exception{
@@ -81,22 +58,10 @@ public class DatabaseTest {
 	@Test
 	public void testSimpleRead() throws Exception{
 		MysqlAccess test = new MysqlAccess();
-		assertFalse("no results returned", test.simpleRead("select * from healthapp.session").isEmpty());
+		String results = test.simpleRead("select * from healthapp.users");
+		System.out.println(results);
+		assertFalse("no results returned", results.isEmpty());
 	}
 	
-	@Test
-	public void testGetResultSet(){
-		Map<String, String> lookupMap = new HashMap<String, String>();
-		lookupMap.put("id", "14");
-		lookupMap.put("username", "'testUsername'");
-		lookupMap.put("password", "'testPassword'");
-		lookupMap.put("updated_date", "?");
-		lookupMap.put("active", "'Y'");
-		MysqlAccess test = new MysqlAccess();
-		List<String> values = new ArrayList<String>(); 
-		values.addAll(lookupMap.values());
-		test.simpleLookup(lookupMap, "users");
-		assertNotNull(test.getResultSet());
-	}
 }
 

@@ -2,6 +2,10 @@ package servlets;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -34,13 +38,12 @@ public class HomeServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		MysqlAccess db = new MysqlAccess();
-		String[] data = {"anonymous", request.getLocalName(), "servlet"}; 
-		try {
-			db.insertLog(data);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		Map<String, String> data = new HashMap<String,String>();
+		data.put("user","anonymous");
+		data.put("timestamp", new Timestamp(new Date().getTime()).toString());
+		data.put("page", request.getLocalName());
+		data.put("source", "servlet"); 
+		db.insertRecord(data, "session");
 	}
 
 	/**
