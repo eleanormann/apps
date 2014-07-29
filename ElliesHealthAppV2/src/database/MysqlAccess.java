@@ -9,9 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 
@@ -168,19 +166,35 @@ public class MysqlAccess {
 			return false;
 		}
 		
-		public String readRecord(Map<String,String> readMap, String table){
-			return null;
+	public String readRecord(Map<String,String> selectMap, Map<String, String> whereMap, String table){
+		String query = createSelectStatement(selectMap) + " from " + table;
+		if(null!=whereMap){
+			query += " " + createWhereStatement(whereMap);
 		}
+		return query;
+	}
 
 	//TODO ensure that the values are in the correct order
-	public String createInsertStatement(List<String> data, String table) {
-		String insertStatement = "insert into healthapp." + table + " values (default, ";
-		for(String value : data){
-			if(value.equals("?")){
-				insertStatement += value + ", ";
-			}else{
-				insertStatement += "'" + value + "', ";
-			}	
+	public String createInsertStatement(Map<String, String> data, String table) {
+		String insertStatement = "insert into healthapp." + table + " values (";
+		try{
+			connectToDatabase();
+			resultSet = statement.executeQuery("select * from " + table);
+			ResultSetMetaData tableInfo = resultSet.getMetaData();
+			for(int i = 1; i<=tableInfo.getColumnCount(); i++){
+				String value = data.get(tableInfo.getColumnName(i));
+				if(null==value){
+					insertStatement += "default, ";
+				}else if(value.equals("?")){
+					insertStatement += value + ", ";
+				}else{
+					insertStatement += "'" + value + "', ";
+				}	
+			}
+		}catch(SQLException e){
+			e.printStackTrace();
+		}finally{
+			close();
 		}
 		insertStatement = insertStatement.substring(0, insertStatement.length()-2) + ")";
 		return insertStatement;
@@ -189,20 +203,24 @@ public class MysqlAccess {
 	private String createUpdateStatement(Map<String, String> upsertMap,	String table) {
 		String updateStatement =  "update " + table + " set ";
 		for(String key : upsertMap.keySet()){
-			updateStatement += key + "=" + upsertMap.get(key) + ", ";
+			if(upsertMap.get(key).equals("?")){
+				updateStatement += key + "=" + upsertMap.get(key) + ", ";
+			}else{
+				updateStatement += key + "='" + upsertMap.get(key) + "', ";
+			}	
 		}
 		return updateStatement.substring(0, updateStatement.lastIndexOf(',')) + " where id=" + upsertMap.get("id");
 	} 
 	
-	public String createSelectStatement(String[] variables) {
+	public String createSelectStatement(Map<String, String> selectMap) {
 		String query = "select ";
-		for (String variable : variables){
-			query += variable + ", ";
+		for (String key : selectMap.keySet()){
+			query += key + ", ";
 		}
-		query = query.substring(0, query.length()-5);
-		System.out.println(query);
+		query = query.substring(0, query.length()-2);
 		return query;
 	}
+	
 	public String createWhereStatement(Map<String,String> lookupMap){
 		String whereStatement = " where ";
 		for (String key : lookupMap.keySet()){
@@ -227,9 +245,7 @@ public class MysqlAccess {
 				 //TODO replace with log entry
 				 upsert = "update";
 			} else{
-				List<String> columns = new ArrayList<String>();
-				columns.addAll(upsertMap.values());
-				upsertStatement = createInsertStatement(columns, table);
+				upsertStatement = createInsertStatement(upsertMap, table);
 				//TODO replace with log entry
 				upsert = "insert";
 			}

@@ -35,46 +35,11 @@ public class AuthenticationTests {
 		fail("not yet implemented");
 	}
 	
-	@Test
-	public void testCheckInsertOrUpdate(){
-		fail("not yet implemented");
-	}
-	
-	@Test
-	public void testInsertLoginDetails(){
-		MysqlAccess dbtest = new MysqlAccess();
-		Map<String, String> inputMap = new HashMap<String, String>();
-		inputMap.put("username", "testUsername");
-		inputMap.put("password", "testPassword");
-		inputMap.put("updated_date","?");
-		inputMap.put("active", "Y");
-		assertTrue("insert failed", dbtest.insertRecord(inputMap, "users"));
-	}
-	
-	@Test
-	public void testCreateSelectStatement(){
-		MysqlAccess dbtest = new MysqlAccess();
-		String[] testData = {"username", "password"};
-		assertTrue("unexpected string returned: " + dbtest.createSelectStatement(testData),  
-			"select username, password".equals(dbtest.createSelectStatement(testData)));
-
-	}
-	
-	@Test
-	public void testCreateInsertStatement(){
-		MysqlAccess dbtest = new MysqlAccess();
-		List<String> values = new ArrayList<String>();
-		values.add("testUsername");
-		values.add("testPassword");
-		values.add("?");
-		values.add("Y");
-		assertTrue("unexpected string returned: " + dbtest.createInsertStatement(values, "users"),  
-			"insert into healthapp.users values (default, 'testUsername', 'testPassword', ?, 'Y')".equals(dbtest.createInsertStatement(values, "users")));
-	}
 	
 	@Test
 	public void testCreateToken(){
 		SimpleAuthenticate test = new SimpleAuthenticate();
+		test.createUser("testUsername", "testPassword");
 		test.authenticateLogin("testUsername", "testPassword");
 		assertTrue("token is false", test.getToken());
 		SimpleAuthenticate testno = new SimpleAuthenticate();

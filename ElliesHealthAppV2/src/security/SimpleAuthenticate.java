@@ -40,14 +40,28 @@ public class SimpleAuthenticate {
 		Map<String, String> readMap = new HashMap<String, String>();
 		readMap.put("username", username);
 		readMap.put("password", password);
-		String results =  readUsers.readRecord(readMap, "users");
-		//TODO check results contains username/password combo
+		String query = readUsers.createSelectStatement(readMap) + " from users "  
+				+ readUsers.createWhereStatement(readMap);
+		String results =  readUsers.simpleRead(query);
 		if(results.contains("username=" + username + " password=" + password)){
 			token=true;
 		}
 		
 	}
 
+	//TODO handle request when someone is logged in; e.g. prompt to log out 
+	//TODO: handle confirmation - should the user be logged in automatically?
+	public void createUser(String username, String password){
+		if(token==true){
+			logOut();
+		}
+		MysqlAccess create = new MysqlAccess();
+		Map<String, String> userMap = new HashMap<String, String>();
+		userMap.put("username", username);
+		userMap.put("password", password);
+		create.simpleCUD(create.createInsertStatement(userMap, "users"));
+	}
+	
 	public void logOut() {
 		token = false;
 	}

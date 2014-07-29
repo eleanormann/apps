@@ -2,10 +2,7 @@ package test;
 
 import static org.junit.Assert.*;
 
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -26,19 +23,19 @@ public class DatabaseTest {
 		MysqlAccess test = new MysqlAccess();
 		String actual = test.upsert(upsertMap, "users");
 		String actual2 = test.upsert(upsertMap, "users");
-		
 		assertTrue("insert didn't happen as expected, method returned " + actual, actual.equals("insert"));
 		assertTrue("update didn't happen as expected, method returned " + actual2, actual2.equals("update"));
+		test.simpleCUD("delete from users where username='newUser' and password='newPassword'");
 	}
 	
 	
 	@Test
 	public void testCreateWhereStatement(){
 		Map<String, String> whereStatementEntries = new HashMap<String, String>();
-		whereStatementEntries.put("username", "'testUsername'");
-		whereStatementEntries.put("password", "'testPassword'");
+		whereStatementEntries.put("username", "testUsername");
+		whereStatementEntries.put("password", "testPassword");
 		whereStatementEntries.put("updated_date", "?");
-		whereStatementEntries.put("active", "'Y'");
+		whereStatementEntries.put("active", "Y");
 		MysqlAccess test = new MysqlAccess();
 		String whereStatement = test.createWhereStatement(whereStatementEntries);
 		assertTrue("got this statement: " + whereStatement, whereStatement.contains("username='testUsername'")
